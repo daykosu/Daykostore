@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>VenturePlay — E-ticaret Simülatörü</title>
+<style>
+  :root {
+    --purple: #534AB7;
+    --purple-light: #EEEDFE;
+    --purple-mid: #7F77DD;
+    --teal: #1D9E75;
+    --teal-light: #E1F5EE;
+    --amber: #BA7517;
+    --amber-light: #FAEEDA;
+    --coral: #D85A30;
+    --coral-light: #FAECE7;
+    --red: #E24B4A;
+    --red-light: #FCEBEB;
+    --gray: #5F5E5A;
+    --gray-light: #F1EFE8;
+    --bg: #F7F6F2;
+    --card: #FFFFFF;
+    --text: #1a1a18;
+    --text-2: #5F5E5A;
+    --text-3: #888780;
+    --border: rgba(0,0,0,0.1);
+    --border-2: rgba(0,0,0,0.06);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; }
+
+  /* App shell */
+  #app { width: 100%; max-width: 420px; min-height: 100vh; background: var(--bg); display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  .screen { display: none; flex-direction: column; min-height: 100vh; padding: 0; animation: fadeIn 0.25s ease; }
+  .screen.active { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
+
+  /* Top bar */
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 10px; background: var(--bg); position: sticky; top: 0; z-index: 10; }
+  .topbar-title { font-size: 13px; font-weight: 600; color: var(--text-2); letter-spacing: 0.03em; }
+  .day-badge { background: var(--purple-light); color: var(--purple); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 99px; }
+  .budget-badge { background: var(--card); border: 0.5px solid var(--border); color: var(--text-2); font-size: 11px; padding: 4px 10px; border-radius: 99px; }
+
+  /* Progress */
+  .progress-wrap { padding: 0 18px 12px; }
+  .progress-track { height: 3px; background: var(--border-2); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--purple); border-radius: 2px; transition: width 0.5s ease; }
+
+  /* Scroll area */
+  .scroll-area { flex: 1; overflow-y: auto; padding: 0 18px 100px; -webkit-overflow-scrolling: touch; }
+
+  /* Bottom CTA */
+  .bottom-cta { position: sticky; bottom: 0; padding: 12px 18px 20px; background: linear-gradient(to top, var(--bg) 80%, transparent); }
+  .btn-primary { width: 100%; padding: 15px; background: var(--purple); color: #fff; border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; letter-spacing: 0.01em; }
+  .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+  .btn-secondary { width: 100%; padding: 12px; background: transparent; color: var(--text-2); border: 0.5px solid var(--border); border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; margin-top: 8px; }
+
+  /* AI bubble */
+  .ai-bubble { background: var(--purple-light); border-radius: 4px var(--radius) var(--radius) var(--radius); padding: 13px 15px; margin-bottom: 16px; }
+  .ai-label { font-size: 10px; font-weight: 700; color: var(--purple); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 5px; }
+  .ai-text { font-size: 14px; color: #26215C; line-height: 1.65; }
+
+  /* Section label */
+  .slabel { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; margin-top: 16px; }
+  .slabel:first-child { margin-top: 0; }
+
+  /* Cards */
+  .card { background: var(--card); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+  .card.selected { border-color: var(--purple-mid); background: var(--purple-light); }
+  .card-tap { cursor: pointer; transition: border-color 0.15s; }
+  .card-tap:active { transform: scale(0.99); }
+
+  /* Option buttons */
+  .option { display: flex; gap: 10px; align-items: flex-start; padding: 13px 14px; background: var(--card); border: 0.5px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; cursor: pointer; }
+  .option.selected { border-color: var(--purple-mid); background: var(--purple-light); }
+  .option-icon { font-size: 22px; width: 30px; text-align: center; flex-shrink: 0; }
+  .option-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .option-sub { font-size: 12px; color: var(--text-2); line-height: 1.4; }
+  .option.selected .option-sub { color: var(--purple); }
+
+  /* Stats grid */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .stat-box { background: var(--card); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 11px 12px; }
+  .stat-val { font-size: 20px; font-weight: 700; }
+  .stat-lbl { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+  /* Pills */
+  .pill { display: inline-block; padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+  .pill-purple { background: var(--purple-light); color: var(--purple); }
+  .pill-teal   { background: var(--teal-light); color: #085041; }
+  .pill-amber  { background: var(--amber-light); color: #633806; }
+  .pill-coral  { background: var(--coral-light); color: #712B13; }
+  .pill-red    { background: var(--red-light); color: #791F1F; }
+  .pill-gray   { background: var(--gray-light); color: #444441; }
+
+  /* Warning */
+  .warn-box { border-left: 3px solid var(--amber); background: var(--amber-light); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 11px 13px; margin-bottom: 12px; font-size: 13px; color: #633806; line-height: 1.6; }
+  .warn-box strong { color: #412402; }
+  .crisis-box { border-left: 3px solid var(--red); background: var(--red-light); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 11px 13px; margin-bottom: 12px; font-size: 13px; color: #791F1F; line-height: 1.6; }
+
+  /* Textarea & input */
+  textarea, input[type=text], input[type=number] { width: 100%; padding: 12px 14px; border: 0.5px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; color: var(--text); background: var(--card); resize: none; outline: none; }
+  textarea:focus, input[type=text]:focus, input[type=number]:focus { border-color: var(--purple-mid); }
+  .input-label { font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 5px; display: flex; justify-content: space-between; }
+  .char-hint { font-size: 11px; color: var(--text-3); font-weight: 400; }
+
+  /* Suggestion chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .chip { padding: 6px 12px; background: var(--card); border: 0.5px solid var(--border); border-radius: 99px; font-size: 12px; color: var(--text-2); cursor: pointer; }
+  .chip:active { background: var(--purple-light); color: var(--purple); border-color: var(--purple-mid); }
+
+  /* Tag system */
+  .tag-wrap { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px; border: 0.5px solid var(--border); border-radius: var(--radius-sm); min-height: 46px; background: var(--card); cursor: text; margin-bottom: 8px; }
+  .tag-item { display: flex; align-items: center; gap: 4px; padding: 3px 9px; background: var(--purple-light); color: var(--purple); border-radius: 99px; font-size: 12px; font-weight: 600; }
+  .tag-remove { cursor: pointer; font-size: 15px; line-height: 1; color: var(--purple-mid); }
+  .tag-input-el { border: none; outline: none; font-size: 13px; font-family: inherit; background: transparent; color: var(--text); min-width: 80px; flex: 1; }
+
+  /* SEO bar */
+  .seo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .seo-num { font-size: 28px; font-weight: 700; min-width: 50px; }
+  .seo-track { flex: 1; height: 8px; background: var(--border-2); border-radius: 4px; overflow: hidden; }
+  .seo-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+
+  /* Listing preview */
+  .listing-preview { background: var(--card); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
+  .listing-img { height: 110px; background: var(--gray-light); display: flex; align-items: center; justify-content: center; font-size: 44px; }
+  .listing-body { padding: 11px 13px; }
+  .listing-title { font-size: 13px; font-weight: 600; line-height: 1.4; margin-bottom: 6px; min-height: 36px; color: var(--text); }
+  .listing-price { font-size: 18px; font-weight: 700; color: var(--teal); }
+
+  /* Metric cards */
+  .metrics-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .metric-box { background: var(--card); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 9px 8px; text-align: center; }
+  .metric-val { font-size: 13px; font-weight: 700; }
+  .metric-lbl { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+
+  /* Price slider */
+  .price-slider-card { background: var(--card); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+  .price-center { text-align: center; margin-bottom: 14px; }
+  .price-big { font-size: 38px; font-weight: 700; }
+  .price-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  input[type=range] { width: 100%; accent-color: var(--purple); }
+  .price-markers { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); margin-top: 4px; }
+
+  /* AI eval result */
+  .eval-result { border-radius: var(--radius-sm); padding: 12px 13px; font-size: 13px; line-height: 1.6; margin-top: 8px; }
+  .eval-good { background: var(--teal-light); color: #085041; }
+  .eval-mid  { background: var(--amber-light); color: #633806; }
+  .eval-bad  { background: var(--red-light); color: #791F1F; }
+
+  /* Etsy store mockup */
+  .store-banner { height: 80px; background: linear-gradient(135deg, #f0997b, #d85a30); border-radius: var(--radius) var(--radius) 0 0; }
+  .store-meta { background: var(--card); border: 0.5px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); padding: 10px 14px 14px; margin-bottom: 12px; }
+  .store-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--card); border: 3px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-top: -24px; margin-bottom: 6px; }
+  .store-name { font-size: 16px; font-weight: 700; }
+  .store-stars { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+  .listings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .listing-card { background: var(--card); border: 0.5px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .listing-card-img { height: 90px; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+  .listing-card-body { padding: 8px 10px; }
+  .listing-card-title { font-size: 12px; font-weight: 600; margin-bottom: 3px; line-height: 1.3; }
+  .listing-card-price { font-size: 13px; font-weight: 700; color: var(--teal); }
+
+  /* Notification */
+  .notif { padding: 10px 13px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 8px; display: flex; gap: 8px; align-items: flex-start; line-height: 1.5; }
+  .notif-amber { background: var(--amber-light); color: #633806; }
+  .notif-teal  { background: var(--teal-light); color: #085041; }
+  .notif-red   { background: var(--red-light); color: #791F1F; }
+
+  /* Phase banner */
+  .phase-banner { background: var(--amber-light); border-radius: var(--radius-sm); padding: 10px 13px; margin-bottom: 14px; font-size: 13px; color: #633806; display: flex; gap: 8px; align-items: flex-start; line-height: 1.5; }
+
+  /* Onboarding splash */
+  #screen-splash { background: var(--purple); justify-content: center; align-items: center; text-align: center; }
+  .splash-logo { font-size: 56px; margin-bottom: 20px; }
+  .splash-title { font-size: 28px; font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 10px; }
+  .splash-sub { font-size: 15px; color: rgba(255,255,255,0.7); line-height: 1.6; margin-bottom: 40px; }
+  .btn-white { background: #fff; color: var(--purple); border: none; border-radius: var(--radius); padding: 15px 32px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; width: 80%; }
+  .btn-ghost { background: transparent; color: rgba(255,255,255,0.6); border: none; font-size: 13px; cursor: pointer; font-family: inherit; margin-top: 14px; }
+
+  /* Dots */
+  .step-dots { display: flex; gap: 5px; justify-content: center; margin-bottom: 28px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+  .dot.active { width: 18px; border-radius: 3px; background: var(--purple); }
+
+  /* Timer */
+  .timer { background: var(--red-light); border-radius: var(--radius-sm); padding: 8px 14px; text-align: center; font-size: 13px; color: #791F1F; font-weight: 600; margin-bottom: 12px; }
+  .timer span { font-size: 20px; font-weight: 800; display: block; }
+
+  /* Channel card multi */
+  .channel-card { border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px 13px; margin-bottom: 8px; cursor: pointer; background: var(--card); }
+  .channel-card.selected { border-color: var(--purple-mid); background: var(--purple-light); }
+  .channel-top { display: flex; gap: 10px; margin-bottom: 8px; align-items: flex-start; }
+  .channel-icon { font-size: 20px; width: 28px; text-align: center; flex-shrink: 0; }
+  .channel-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .channel-sub { font-size: 12px; color: var(--text-2); line-height: 1.4; }
+  .channel-card.selected .channel-sub { color: var(--purple); }
+
+  /* Eval btn */
+  .eval-btn { width: 100%; padding: 11px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; background: var(--gray-light); color: var(--gray); border: 0.5px solid var(--border); font-family: inherit; margin-top: 8px; }
+
+  /* Summary screen */
+  .summary-card { background: var(--card); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; }
+  .summary-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+  .summary-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 0.5px solid var(--border-2); font-size: 13px; }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-key { color: var(--text-2); }
+  .summary-val { font-weight: 600; }
+
+  /* Loading dots anim */
+  .ldots::after { content: '.'; animation: ld 1s infinite; }
+  @keyframes ld { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
+
+  .divider { border: none; border-top: 0.5px solid var(--border-2); margin: 14px 0; }
+  .back-btn { background: none; border: none; color: var(--text-3); font-size: 13px; cursor: pointer; font-family: inherit; padding: 0; }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- SPLASH -->
+<div class="screen active" id="screen-splash" style="padding: 40px 24px;">
+  <div class="splash-logo">🏪</div>
+  <div class="splash-title">Gerçek para harcamadan<br>e-ticaret kur.</div>
+  <div class="splash-sub">AI danışmanın eşliğinde 20 günde $1,000 ciro hedefle. Her karar puanlanır, her hata öğretir.</div>
+  <button class="btn-white" onclick="go('screen-ob1')">Başlayalım →</button>
+  <button class="btn-ghost" onclick="go('screen-ob1')">Zaten hesabım var</button>
+</div>
+
+<!-- ONBOARDING 1: Deneyim -->
+<div class="screen" id="screen-ob1">
+  <div class="scroll-area" style="padding-top:24px;">
+    <div class="step-dots">
+      <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div style="font-size:22px;font-weight:800;margin-bottom:6px;">E-ticaret deneyimin?</div>
+      <div style="font-size:14px;color:var(--text-2);line-height:1.6;">AI danışmanın sana nasıl konuşacağını buna göre ayarlayacak.</div>
+    </div>
+    <div class="option" id="ob1-a" onclick="selectOb1('a')">
+      <div class="option-icon">🌱</div>
+      <div><div class="option-title">Hiç yok</div><div class="option-sub">Sıfırdan başlıyorum</div></div>
+    </div>
+    <div class="option" id="ob1-b" onclick="selectOb1('b')">
+      <div class="option-icon">📦</div>
+      <div><div class="option-title">Biraz var</div><div class="option-sub">Bir şeyler denedim ama tutmadı</div></div>
+    </div>
+    <div class="option" id="ob1-c" onclick="selectOb1('c')">
+      <div class="option-icon">🚀</div>
+      <div><div class="option-title">Aktif satıcıyım</div><div class="option-sub">Geliştirmek istiyorum</div></div>
+    </div>
+  </div>
+  <div class="bottom-cta">
+    <button class="btn-primary" onclick="go('screen-ob2')">Devam →</button>
+  </div>
+</div>
+
+<!-- ONBOARDING 2: Hedef -->
+<div class="screen" id="screen-ob2">
+  <div class="scroll-area" style="padding-top:24px;">
+    <div class="step-dots">
+      <div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div style="font-size:22px;font-weight:800;margin-bottom:6px;">Hedefin ne?</div>
+      <div style="font-size:14px;color:var(--text-2);">Simülasyon bütçen ve senaryosu buna göre şekillenecek.</div>
+    </div>
+    <div class="option" id="ob2-a" onclick="selectOb2('a')">
+      <div class="option-icon">💰</div>
+      <div><div class="option-title">Yan gelir</div><div class="option-sub">Aylık $500–2,000 ekstra</div></div>
+    </div>
+    <div class="option" id="ob2-b" onclick="selectOb2('b')">
+      <div class="option-icon">🏢</div>
+      <div><div class="option-title">Tam zamanlı iş</div><div class="option-sub">Kendi işimi kurmak istiyorum</div></div>
+    </div>
+    <div class="option" id="ob2-c" onclick="selectOb2('c')">
+      <div class="option-icon">📚</div>
+      <div><div class="option-title">Sadece öğrenmek</div><div class="option-sub">Nasıl çalıştığını anlamak istiyorum</div></div>
+    </div>
+    <div style="margin-top:16px;">
+      <div class="input-label">Başlangıç bütçen ($)</div>
+      <input type="number" id="ob-budget" placeholder="500" value="500" min="100" max="10000">
+      <div style="font-size:11px;color:var(--text-3);margin-top:4px;">Bu sanal para — önerilen $500</div>
+    </div>
+  </div>
+  <div class="bottom-cta">
+    <button class="btn-primary" onclick="go('screen-ob3')">Devam →</button>
+  </div>
+</div>
+
+<!-- ONBOARDING 3: Platform -->
+<div class="screen" id="screen-ob3">
+  <div class="scroll-area" style="padding-top:24px;">
+    <div class="step-dots">
+      <div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div style="font-size:22px;font-weight:800;margin-bottom:6px;">Hangi platformda?</div>
+      <div style="font-size:14px;color:var(--text-2);">Seviye 1 için bir tane seç. Diğerleri ilerledikçe açılır.</div>
+    </div>
+    <div class="card card-tap selected" id="plat-etsy" onclick="selectPlat('etsy')" style="display:flex;gap:12px;align-items:center;">
+      <div style="font-size:28px;">🛍️</div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:700;">Etsy</div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:2px;">El yapımı & print-on-demand</div>
+      </div>
+      <span class="pill pill-teal">Kolay başlangıç</span>
+    </div>
+    <div class="card card-tap" id="plat-amazon" onclick="selectPlat('amazon')" style="display:flex;gap:12px;align-items:center;">
+      <div style="font-size:28px;">📦</div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:700;">Amazon</div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:2px;">FBA & private label</div>
+      </div>
+      <span class="pill pill-amber">Orta zorluk</span>
+    </div>
+    <div class="card" style="display:flex;gap:12px;align-items:center;opacity:0.45;">
+      <div style="font-size:28px;">🌐</div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:700;">Shopify</div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:2px;">Kendi marka mağazan</div>
+      </div>
+      <span class="pill pill-gray">🔒 Seviye 3</span>
+    </div>
+  </div>
+  <div class="bottom-cta">
+    <button class="btn-primary" onclick="go('screen-ob4')">Devam →</button>
+  </div>
+</div>
+
+<!-- ONBOARDING 4: AI karşılama -->
+<div class="screen" id="screen-ob4">
+  <div class="scroll-area" style="padding-top:24px;">
+    <div class="step-dots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div>
+    </div>
+    <div style="font-size:22px;font-weight:800;margin-bottom:6px;">AI danışmanın hazır.</div>
+    <div style="font-size:14px;color:var(--text-2);margin-bottom:20px;line-height:1.6;">Profiline göre senaryonu kişiselleştirdi.</div>
+    <div class="ai-bubble">
+      <div class="ai-label">Ortak · AI danışman</div>
+      <div class="ai-text">"Etsy'de sıfırdan başlıyoruz. $500 bütçenle 20 günde $1,000 ciro hedefin var. İlk kararın niş seçimi — sana 3 trend ürün önereceğim, sen de kendi fikrini yazabilirsin. Hazır olduğunda başlayalım."</div>
+    </div>
+    <div class="card" style="font-size:13px;color:var(--text-2);line-height:1.7;">
+      <div style="display:flex;gap:8px;margin-bottom:8px;"><span>📊</span><span>Gerçek Amazon & Etsy trend verisiyle besleniyor</span></div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;"><span>🧠</span><span>Her karar AI tarafından puanlanır ve değerlendirilir</span></div>
+      <div style="display:flex;gap:8px;"><span>📖</span><span>Yaptığın her seçim karar geçmişine eklenir</span></div>
+    </div>
+  </div>
+  <div class="bottom-cta">
+    <button class="btn-primary" onclick="go('screen-day1')">Gün 1'e başla →</button>
+  </div>
+</div>
+
+<!-- GÜN 1: Niş seçimi -->
+<div class="screen" id="screen-day1">
+  <div class="topbar">
+    <div class="topbar-title">LumiPlay</div>
+    <div class="day-badge">Gün 1 / 20</div>
+    <div class="budget-badge">💰 $500</div>
+  </div>
+  <div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:5%"></div></div></div>
+  <div class="scroll-area">
+    <div class="ai-bubble">
+      <div class="ai-label">Ortak · AI danışman</div>
+      <div class="ai-text">Yan gelir hedefliyorsun, $500 bütçen var. Bu hafta Etsy'de trend olan 3 niş getirdim — gerçek arama verilerine bakarak. İstersen birini seç, istersen kendi fikrinde yaz.</div>
+    </div>
+    <div class="slabel">Trend nişler — bu hafta</div>
+    <div class="card card-tap" id="n1" onclick="selectNiche('n1')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div><div style="font-size:15px;font-weight:700;">🖼️ Minimalist duvar sanatı</div><div style="font-size:12px;color:var(--text-2);margin-top:2px;">Print-on-demand · Stok gerekmez</div></div>
+        <span class="pill pill-coral">🔥 Trend</span>
+      </div>
+      <div class="metrics-3">
+        <div class="metric-box"><div class="metric-val" style="color:var(--teal);">↑18%</div><div class="metric-lbl">Arama artışı</div></div>
+        <div class="metric-box"><div class="metric-val">$18–35</div><div class="metric-lbl">Ort. fiyat</div></div>
+        <div class="metric-box"><div class="metric-val" style="color:var(--amber);">Yüksek</div><div class="metric-lbl">Rekabet</div></div>
+      </div>
+    </div>
+    <div class="card card-tap" id="n2" onclick="selectNiche('n2')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div><div style="font-size:15px;font-weight:700;">🐾 Evcil hayvan ürünleri</div><div style="font-size:12px;color:var(--text-2);margin-top:2px;">Kişiselleştirilmiş · Tekrar alım yüksek</div></div>
+        <span class="pill pill-teal">Güvenli</span>
+      </div>
+      <div class="metrics-3">
+        <div class="metric-box"><div class="metric-val" style="color:var(--teal);">↑9%</div><div class="metric-lbl">Arama artışı</div></div>
+        <div class="metric-box"><div class="metric-val">$22–48</div><div class="metric-lbl">Ort. fiyat</div></div>
+        <div class="metric-box"><div class="metric-val" style="color:var(--teal);">Orta</div><div class="metric-lbl">Rekabet</div></div>
+      </div>
+    </div>
+    <div class="card card-tap selected" id="n3" onclick="selectNiche('n3')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div><div style="font-size:15px;font-weight:700;">🏮 3D Printer Lamba Kiti</div><div style="font-size:12px;color:var(--text-2);margin-top:2px;">Shade + USB LED · Benzersiz</div></div>
+        <span class="pill pill-purple">Yüksek marj</span>
+      </div>
+      <div class="metrics-3">
+        <div class="metric-box"><div class="metric-val" style="color:var(--teal);">↑31%</div><div class="metric-lbl">Arama artışı</div></div>
+        <div class="metric-box"><div class="metric-val">$42–75</div><div class="metric-lbl">Ort. fiyat</div></div>
+        <div class="metric-box"><div class="metric-val" style="color:var(--teal);">Düşük</div><div class="metric-lbl">Rekabet</div></div>
+      </div>
+    </div>
+    <div class="slabel" style="margin-top:16px;">Ya da kendi fikrin</div>
+    <textarea id="niche-custom" rows="3" placeholder="Örn: Sürdürülebilir ambalaj ürünleri, dijital planlayıcı..." oninput="onNicheCustom()"></textarea>
+    <button class="eval-btn" id="niche-eval-btn" style="display:none;" onclick="evalNiche()">AI ile değerlendir ↗</button>
+    <div id="niche-eval-result"></div>
+  </div>
+  <div class="bottom-cta">
+    <button class="btn-primary" onclick="go('screen-day2')">Niş seçimini onayla →</button>
+  </div>
+</div>
+
+<!-- GÜN 2: Üretim modeli -->
+<div class="screen" id="screen-day2">
+  <div class="topbar">
+    <div class="topbar-title">LumiPrint</div>
+    <div class="day-badge">Gün 2 / 20</div>
+    <div class="budget-badge">💰 $500</div>
+  </div>
+  <div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:10%"></div></div></div>
+  <div class="scroll-area">
+    <div class="ai-bubble">
+      <div class="ai-label">Ortak · AI danışman</div>
+      <div class="ai-text">3D printer masa lambası — yaratıcı seçim! Ama dikkat: elektrikli ürün satmak CE sertifikası gerektirebilir. Birçok başarılı satıcı bu yüzden sadece abajur satıyor — müşteri kendi ampulünü takıyor.</div>
+    </div>
+    <div class="warn-box"><strong>⚡ Elektrik güvenliği:</strong> Tam lamba satmak Etsy'de sorun çıkarabilir. Shade only veya USB LED kit çok daha güvenli ve karlı bir başlangıç.</div>
+    <div class="slabel">Üretim modelini seç</div>
+    <div class="card card-tap selected" id="p1" onclick="selectProd('p1')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div><div style="font-size:15px;font-weight:700;">🏮 Sadece abajur sat</div><div style="font-size:12px;color:var(--text-2);margin-top:2px;">Shade only — elektrik yok, sertifika gerekmez</div></div>
+        <span class="pill pill-teal">Düşük risk</span>
+      </div>
+      <div class="metrics-3">
+        <div class="metric-box"><div class="metric-val" style="color:var(--teal);">%62</div><div class="metric-lbl">Marj</div></div>
+        <div class="metric-box"><div class="metric-val">$28–55</div><div class="metric-lbl">Fiyat</div></div>
+        <div class="metric-box"><div class="metric-val" style="color:var(--teal);">Yok</div><div class="metric-lbl">Sertifika</div></div>
+      </div>
+    </div>
+    <div class="card card-tap" id="p2" onclick="selectProd('p2')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div><div style="font-size:15px;font-weight:700;">🎁 Kit — Shade + USB LED</div><div style="font-size:12px;color:var(--text-2);margin-top:2px;">USB = daha basit güvenlik, hediye paketi olabilir</div></div>
+        <span class="pill pill-amber">Orta risk</span>
+      </div>
+      <div class="metrics-3">
+        <div class="metric-box"><div class="metric-val" style="color:var(--amber);">%48</div><div class="metric-lbl">Marj</div></div>
+        <div class="metric-box"><div class="metric-val">$42–75</div><div class="metric-lbl">Fiyat</div></div>
+        <div class="metric-box"><div class="metric-val" style="color:var(--amber);">USB basit</div><div class="metric-lbl">Sertifika</div></div>
+      </div>
+    </div>
+    <div class="card card-tap" id="p3" onclick="selectProd('p3')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div><div style="font-size:15px;font-weight:700;">💡 Komple lamba</div><div style="font-size:12px;color:var(--text-2);margin-top:2px;">Kablo + ampul dahil — yüksek fiyat, yüksek risk</div></div>
+        <span class="pill pill-red">Yüksek risk</span>
+      </div>
+      <div class="metrics-3">
+        <div class="metric-box"><div class="metric-val" style="color:var(--red);">%38</div><div class="metric-lbl">Marj</div></div>
+        <div class="metric-box"><div class="metric-val">$65–120</div><div class="metric-lbl">Fiyat</div></div>
+        <div class="metric-box"><div class="metric-val" style="color:var(--red);">CE zorunlu</div><div class="metric-lbl">Sertifika</div></div>
+      </div>
+    </div>
+    <div class="slabel" style="margin-top:16px;">Farklı bir fikrin mi var?</div>
+    <textarea id="prod-custom" rows="3" placeholder="Örn: Sadece dijital STL dosyasını satarım, müşteri kendi basar..." oninput="onProdCustom()"></textarea>
+    <button class="eval-btn" id="prod-eval-btn" style="display:none;" onclick="evalProd()">AI ile değerlendir ↗</button>
+    <div id="prod-eval-result"></div>
+  </div>
+  <div class="bottom-cta">
+    <button class="btn-primary" onclick="go('screen-day3')">Üretim modelini onayla →</button>
+  </div>
+</div>
+
+<!-- GÜN 3: Mağaza ismi -->
+<div class="screen" id="screen-day3">
+  <div class="topbar">
+    <div class="topbar-title">LumiPrint</div>
+    <div class="day-badge">Gün 3 / 20</div>
+    <div class="budget-badge">💰 $500</div>
+  </div>
+  <div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:15%"></div></div></div>
+  <div class="scroll-area">
+    <div class="ai-bubble">
+      <div class="ai-label">Ortak · AI danışman</div>
+      <div class="ai-text">Bu isim Etsy URL'in, marka kimliğin ve ileride tescil edeceğin isim olacak. Acele etme — marka tescil kontrolü yapacağız.</div>
+    </div>
+    <div class="slabel">Mağaza ismin</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <input type="text" id="store-name-input" placeholder="Mağaza ismi..." oninput="onStoreName()" style="flex:1;">
+      <button style="padding:12px 14px;background:var(--purple);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;" onclick="checkTrademark()">Kontrol et</button>
+    </div>
+    <div class="slabel">Öneri isimler</div>
+    <div class="chips">
+      <div class="chip" onclick="fillStoreName('LumiPrint')">LumiPrint</div>
+      <div class="chip" onclick="fillStoreName('ShadeWorks')">ShadeWorks</div>
+      <div class="chip" onclick="fillStoreName('NovaMold')">NovaMold</div>
+      <div class="chip" onclick="fillStoreName('LampLab')">LampLab</div>
+      <div class="chip" onclick="fillStoreName('PrintedLight')">PrintedLight</div>
+      <div class="chip" onclick="fillStoreName('GlowForge Studio')">GlowForge Studio ⚠️</div>
+    </div>
+    <div id="tm-result" class="warn-box" style="display:none;"></div>
+    <div id="store-preview" style="display:none;margin-bottom:12px;">
+      <div class="slabel">Mağaza önizleme</div>
+      <div class="store-banner"></div>
+      <div class="store-meta">
+        <div class="store-avatar">🏮</div>
+        <div class="store-name" id="preview-store-name">—</div>
+        <div class="store-stars">⭐⭐⭐⭐⭐ · etsy.com/shop/<span id="preview-store-url">—</span></div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="slabel">Tasarım</div>
+    <div class="card card-tap selected" id="d1" onclick="selectDesign('d1')">
+      <div style="font-size:14px;font-weight:700;">🎨 Freelancer tut — Fiverr</div>
+      <div style="font-size:12px;color:var(--text-2);margin-top:3px;">$30–80 · Profesyonel sonuç · İtibar +14</div>
+    </div>
+    <div class="card card-tap" id="d2" onclick="selectDesign('d2')">
+      <div style="font-size:14px;font-weight:700;">🖥️ Canva ile kendin yap</div>
+      <div style="font-size:12px;color:var(--text-2);margin-top:3px;">Ücretsiz · 2–3 saat · İtibar +4</div>
+    </div>
+    <div class="card card-tap" id="d3" onclick="selectDesign('d3')">
+      <div style="font-size:14px;font-weight:700;">🤖 AI ile üret</div>
+      <div style="font-size:12px;color:var(--text-2);margin-top:3px;">Ücretsiz · Hızlı · İtibar +6</div>
+    </div>
+  </div>
+  <div class="bottom-cta">
+    <button class="btn-primary" onclick="confirmDay3()">Mağazayı kur →</button>
+  </div>
+</div>
+
+<!-- GÜN 4: SEO -->
+<div class="screen" id="screen-day4">
+  <div class="topbar">
+    <div class="topbar-title">LumiPrint</div>
+    <div class="day-badge">Gün 4 / 20</div>
+    <div class="budget-badge" id="budget-d4">💰 $450</div>
+  </div>
+  <div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:20%"></div></div></div>
+  <div class="scroll-area">
+    <div class="ai-bubble">
+      <div class="ai-label">Ortak · AI danışman</div>
+      <div class="ai-text">Etsy'de görünürlük tamamen SEO'ya bağlı. Başlık, tag ve açıklama doğru yazılmazsa kimse seni bulamaz. Her alanı doldurdukça SEO skoru gerçek zamanlı güncellenir.</div>
+    </div>
+    <div class="listing-preview">
+      <div class="listing-img">🏮</div>
+      <div class="listing-body">
+        <div class="listing-title" id="listing-title-prev">Başlık buraya gelecek...</div>
+        <div class="listing-price" id="listing-price-prev">$—</div>
+      </div>
+    </div>
+    <div class="seo-row">
+      <div class="seo-num" id="seo-score-num" style="color:var(--red);">0</div>
+      <div class="seo-track"><div class="seo-fill" id="seo-bar" style="width:0%;background:var(--red);"></div></div>
+      <div style="font-size:12px;color:var(--text-3);min-width:42px;text-align:right;" id="seo-label">Zayıf</div>
+    </div>
+    <div style="font-size:11px;color:var(--text-3);margin-bottom:14px;">70+ olursa organik görünürlük başlar.</div>
+    <div class="input-label">Listing başlığı <span class="char-hint" id="title-chars">0/140</span></div>
+    <div class="chips">
+      <div class="chip" onclick="fillTitle('3D Printed Lamp Shade Kit with USB LED Strip — Minimalist Desk Light, Home Decor Gift')">Öneri 1</div>
+      <div class="chip" onclick="fillTitle('Geometric 3D Print Lampshade + LED Kit — Modern Table Lamp, Unique Gift for Him')">Öneri 2</div>
+    </div>
+    <input type="text" id="seo-title" placeholder="Başlık yaz..." maxlength="140" oninput="onSeoTitle()" style="margin-bottom:12px;">
+    <div class="input-label">Fiyat ($)</div>
+    <input type="number" id="seo-price" placeholder="45" min="10" max="500" oninput="onSeoPrice()" style="max-width:110px;margin-bottom:12px;">
+    <div class="input-label">Açıklama <span class="char-hint" id="desc-chars">0/500</span></div>
+    <textarea id="seo-desc" rows="3" placeholder="Ürünü tanımla — malzeme, boyut, ne içeriyor, nasıl kurulur..." maxlength="500" oninput="onSeoDesc()" style="margin-bottom:10px;"></textarea>
+    <div class="input-label">Etiketler (tag) — max 13 <span class="char-hint" id="tag-count-d4">0/13</span></div>
+    <div class="tag-wrap" id="tag-wrap-d4" onclick="document.getElementById('tag-in').focus()">
+      <input class="tag-input-el" id="tag-in" placeholder="Tag yaz, Enter'a bas..." onkeydown="onTagKeyD4(event)">
+    </div>
+    <div class="slabel">Önerilen taglar</div>
+    <div class="chips" id="sug-tags-d4">
+      <div class="chip" onclick="addTagD4('3d printed lamp')">3d printed lamp</div>
+      <div class="chip" onclick="addTagD4('desk light kit')">desk light kit</div>
+      <div class="chip" onclick="addTagD4('usb led lamp')">usb led lamp</div>
+      <div class="chip" onclick="addTagD4('minimalist lamp shade')">minimalist lamp shade</div>
+      <div class="chip" onclick="addTagD4('home office decor')">home office decor</div>
+      <div class="chip" onclick="addTagD4('geometric lamp')">geometric lamp</div>
+      <div class="chip" onclick="addTagD4('3d print gift')">3d print gift</div>
+      <div class="chip" onclick="addTagD4('unique desk gift')">unique desk gift</div>
+      <div class="chip" onclick="addTagD4('led night light')">led night light</div>
+      <div class="chip" onclick="addTagD4('handmade lamp')">handmade lamp</div>
+      <div class="chip" onclick="addTagD4('modern table lamp')">modern table lamp</div>
+      <div class="chip" onclick="addTagD4('bedroom decor')">bedroom decor</div>
+      <div class="chip" onclick="addTagD4('gift for him')">gift for him</div>
+    </div>
+    <button class="eval-btn" onclick="analyzeSEO()" style="margin-top:12px;">AI ile tam analiz yap ↗</button>
+    <div id="seo-ai-result"></div>
+  </div>
+  <div class="bottom-cta">
+    <button class="btn-primary" onclick="go('screen-day5')">Listingi yayınla →</button>
+  </div>
+</div>
+
+<!-- GÜN 5: Fiyatlandırma -->
+<div class="screen" id="screen-day5">
+  <div class="topbar">
+    <div class="topbar-title">LumiPrint</div>
+    <div class="day-badge">Gün 5 / 20</div>
+    <div class="budget-badge" id="budget-d5">💰 $450</div>
+  </div>
+  <div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:25%"></div></div></div>
+  <div class="scroll-area">
+    <div class="ai-bubble">
+      <div class="ai-label">Ortak · AI danışman</div>
+      <div class="ai-text">Fiyatlandırma hem dönüşümü hem marka algısını belirliyor. Maliyet analizine göre optimal fiyat aralığını gör, sonra kendi stratejini belirle.</div>
+    </div>
+    <div class="slabel">Maliyet analizi — kit başına</div>
+    <div class="card">
+      <div class="summary-row"><div class="summary-key">Filament (abajur)</div><div class="summary-val" style="color:var(--red);">-$3.20</div></div>
+      <div class="summary-row"><div class="summary-key">USB LED şerit</div><div class="summary-val" style="color:var(--red);">-$4.50</div></div>
+      <div class="summary-row"><div class="summary-key">Kutu + ambalaj</div><div class="summary-val" style="color:var(--red);">-$1.80</div></div>
+      <div class="summary-row"><div class="summary-key">Kargo</div><div class="summary-val" style="color:var(--red);">-$6.00</div></div>
+      <div class="summary-row"><div class="summary-key">Etsy komisyonu (%9.5)</div><div class="summary-val" style="color:var(--amber);" id="etsy-fee">-$4.28</div></div>
+      <div class="summary-row" style="font-weight:700;"><div class="summary-key" style="color:var(--text);">Net kâr / ürün</div><div class="summary-val" style="color:var(--teal);" id="net-profit-val">$25.22</div></div>
+    </div>
+    <div class="slabel">Fiyat belirle</div>
+    <div class="price-slider-card">
+      <div class="price-center">
+        <div class="price-big" id="p-price-big">$45</div>
+        <div class="price-sub" id="p-price-sub">Rakip ortalaması $52 · %13 altındasın</div>
+      </div>
+      <input type="range" min="25" max="120" value="45" step="1" id="price-slider-d5" oninput="onPriceD5()">
+      <div class="price-markers">
+        <span>$25</span><span style="color:var(--teal);">$52 ort.</span><span style="color:var(--purple);">$75 premium</span>
+      </div>
+      <div class="metrics-3" style="margin-top:12px;">
+        <div class="metric-box"><div class="metric-val" id="d5-margin" style="color:var(--teal);">56%</div><div class="metric-lbl">Marj</div></div>
+        <div class="metric-box"><div class="metric-val" id="d5-breakeven" style="color:var(--amber);">2 satış</div><div class="metric-lbl">Başabaş</div></div>
+        <div class="metric-box"><div class="metric-val" id="d5-monthly" style="color:var(--purple);">$630</div><div class="metric-lbl">Aylık proj.</div></div>
+      </div>
+    </div>
+    <div class="slabel">Kendi stratejin</div>
+    <div style="font-size:13px;color:var(--text-2);margin-bottom:8px;line-height:1.6;">Örn: "İlk 5 müşteriye $35 indirim uygularım, yorum topladıktan sonra $55'e çıkarım"</div>
+    <textarea id="price-custom" rows="3" placeholder="Fiyat stratejini yaz..." oninput="onPriceCustom()"></textarea>
+    <button class="eval-btn" id="price-eval-btn" style="display:none;" onclick="evalPrice()">AI ile değerlendir ↗</button>
+    <div id="price-eval-result"></div>
+  </div>
+  <div class="bottom-cta">
+    <button class="btn-primary" onclick="go('screen-day6')">Fiyatı onayla →</button>
+  </div>
+</div>
+
+<!-- GÜN 6: Trafik -->
+<div class="screen" id="screen-day6">
+  <div class="topbar">
+    <div class="topbar-title">LumiPrint</div>
+    <div class="day-badge">Faz 2 · Gün 6</div>
+    <div class="budget-badge">💰 $450</div>
+  </div>
+  <div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:30%;background:var(--amber);"></div></div></div>
+  <div class="scroll-area">
+    <div class="phase-banner">🚀 <div><strong>Faz 2 başladı — İlk satışlar.</strong> Listing yayında. Şimdi müşteri nereden gelecek?</div></div>
+    <div class="ai-bubble">
+      <div class="ai-label">Ortak · AI danışman</div>
+      <div class="ai-text">SEO skoru düşük olduğu için organik trafik zayıf kalacak. Birden fazla kanal seçebilirsin. Ya da tamamen farklı bir fikrin varsa yaz.</div>
+    </div>
+    <div class="slabel">Trafik kanalları — birden fazla seçilebilir</div>
+    <div class="channel-card" id="ch1" onclick="toggleCh('ch1')">
+      <div class="channel-top">
+        <div class="channel-icon">🛒</div>
+        <div><div class="channel-name">Etsy Ads <span class="pill pill-amber" style="font-size:10px;">Ücretli</span></div><div class="channel-sub">Platform içi reklam. Düşük SEO'yu telafi eder. $0.30–0.80/tıklama.</div></div>
+      </div>
+      <div class="metrics-3">
+        <div class="metric-box"><div class="metric-val" style="color:var(--amber);">$0.50</div><div class="metric-lbl">Ort. CPC</div></div>
+        <div class="metric-box"><div class="metric-val">%3</div><div class="metric-lbl">Dönüşüm</div></div>
+        <div class="metric-box"><div class="metric-val" style="color:var(--teal);">3–5 gün</div><div class="metric-lbl">İlk sonuç</div></div>
+      </div>
+    </div>
+    <div class="channel-card" id="ch2" onclick="toggleCh('ch2')">
+      <div class="channel-top">
+        <div class="channel-icon">📌</div>
+        <div><div class="channel-name">Pinterest organik <span class="pill pill-teal" style="font-size:10px;">Ücretsiz</span></div><div class="channel-sub">Görsel ürünler için güçlü. 3D lamp nişi Pinterest'te aktif.</div></div>
+      </div>
+      <div class="metrics-3">
+        <div class="metric-box"><div class="metric-val" style="color:var(--teal);">$0</div><div class="metric-lbl">Maliyet</div></div>
+        <div class="metric-box"><div class="metric-val">7–14 gün</div><div class="metric-lbl">İlk sonuç</div></div>
+        <div class="metric-box"><div class="metric-val" style="color:var(--teal);">Kalıcı</div><div class="metric-lbl">Trafik</div></div>
+      </div>
+    </div>
+    <div class="channel-card" id="ch3" onclick="toggleCh('ch3')">
+      <div class="channel-top">
+        <div class="channel-icon">🎵</div>
+        <div><div class="channel-name">TikTok organik <span class="pill pill-teal" style="font-size:10px;">Ücretsiz</span></div><div class="channel-sub">"3D printing" videoları viral potansiyeli yüksek. Baskı süreci çek.</div></div>
+      </div>
+      <div class="metrics-3">
+        <div class="metric-box"><div class="metric-val" style="color:var(--teal);">$0</div><div class="metric-lbl">Maliyet</div></div>
+        <div class="metric-box"><div class="metric-val">1–10 gün</div><div class="metric-lbl">İlk sonuç</div></div>
+        <div class="metric-box"><div class="metric-val" style="color:var(--amber);">Değişken</div><div class="metric-lbl">Trafik</div></div>
+      </div>
+    </div>
+    <div class="channel-card" id="ch4" onclick="toggleCh('ch4')">
+      <div class="channel-top">
+        <div class="channel-icon">👥</div>
+        <div><div class="channel-name">Reddit toplulukları <span class="pill pill-teal" style="font-size:10px;">Ücretsiz</span></div><div class="channel-sub">r/3Dprinting, r/somethingimade, r/desksetup. Organik paylaşım.</div></div>
+      </div>
+      <div class="metrics-3">
+        <div class="metric-box"><div class="metric-val" style="color:var(--teal);">$0</div><div class="metric-lbl">Maliyet</div></div>
+        <div class="metric-box"><div class="metric-val">1–3 gün</div><div class="metric-lbl">İlk sonuç</div></div>
+        <div class="metric-box"><div class="metric-val" style="color:var(--amber);">Anlık</div><div class="metric-lbl">Trafik</div></div>
+      </div>
+    </div>
+    <div class="channel-card" id="ch5" onclick="toggleCh('ch5')">
+      <div class="channel-top">
+        <div class="channel-icon">💼</div>
+        <div><div class="channel-name">LinkedIn Ads <span class="pill pill-red" style="font-size:10px;">Riskli</span></div><div class="channel-sub">CPC $8–12. $45 ürün için ROI negatif olabilir — niş pivot gerekir.</div></div>
+      </div>
+      <div class="metrics-3">
+        <div class="metric-box"><div class="metric-val" style="color:var(--red);">$10</div><div class="metric-lbl">Ort. CPC</div></div>
+        <div class="metric-box"><div class="metric-val">%1–2</div><div class="metric-lbl">Dönüşüm</div></div>
+        <div class="metric-box"><div class="metric-val" style="color:var(--red);">Negatif</div><div class="metric-lbl">ROI tahmini</div></div>
+      </div>
+    </div>
+    <div class="slabel" style="margin-top:16px;">Farklı bir trafik fikrin mi var?</div>
+    <textarea id="traffic-custom" rows="3" placeholder="LinkedIn'de reklam vermek, influencer ile anlaşmak, hediye blog'u..." oninput="onTrafficCustom()"></textarea>
+    <button class="eval-btn" id="traffic-eval-btn" style="display:none;" onclick="evalTraffic()">AI ile değerlendir ↗</button>
+    <div id="traffic-eval-result"></div>
+  </div>
+  <div class="bottom-cta">
+    <button class="btn-primary" onclick="go('screen-store')">Trafik stratejisini onayla →</button>
+  </div>
+</div>
+
+<!-- MAĞAZA GÖRÜNÜMÜ -->
+<div class="screen" id="screen-store">
+  <div class="topbar">
+    <div class="topbar-title">LumiPrint Mağazam</div>
+    <div class="day-badge">Gün 8 / 20</div>
+    <div class="budget-badge">💰 $380</div>
+  </div>
+  <div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:40%;background:var(--amber);"></div></div></div>
+  <div class="scroll-area">
+    <div class="store-banner"></div>
+    <div class="store-meta">
+      <div class="store-avatar">🏮</div>
+      <div class="store-name" id="final-store-name">LumiPrint</div>
+      <div class="store-stars">⭐⭐⭐⭐☆ 4.2 · 3 yorum · 12 gündür aktif</div>
+      <div style="display:flex;gap:14px;margin-top:10px;font-size:12px;color:var(--text-2);">
+        <span><strong>5</strong> listing</span>
+        <span><strong>3</strong> satış</span>
+        <span><strong>142</strong> ziyaretçi</span>
+        <span><strong>%2.1</strong> dönüşüm</span>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-val" style="color:var(--teal);">$105</div><div class="stat-lbl">Bu hafta ciro</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:var(--red);">56</div><div class="stat-lbl">İtibar skoru ↓</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:var(--amber);">$380</div><div class="stat-lbl">Kalan bütçe</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:var(--purple);">$895</div><div class="stat-lbl">$1K hedefine kalan</div></div>
+    </div>
+    <div class="notif notif-red">⚠️ <div><strong>Kriz:</strong> 1 negatif yorum geldi — "renk soluk". İtibar 74'ten 56'ya düştü. Gün 9'da karar vermen gerekecek.</div></div>
+    <div class="notif notif-teal">⭐ <div>Sarah M. — "Absolutely beautiful!" ★★★★★</div></div>
+    <div class="notif notif-amber">📈 <div>Trend: "minimalist desk lamp" araması bu hafta +22% arttı.</div></div>
+    <div class="slabel">Aktif listingler</div>
+    <div class="listings-grid">
+      <div class="listing-card">
+        <div class="listing-card-img" style="background:var(--gray-light);">🏮</div>
+        <div class="listing-card-body">
+          <div class="listing-card-title">3D Lamp Shade Kit + USB LED</div>
+          <div class="listing-card-price">$45</div>
+          <div style="font-size:10px;color:var(--text-3);">2 satış · ★4.0</div>
+        </div>
+      </div>
+      <div class="listing-card">
+        <div class="listing-card-img" style="background:#E1F5EE;">✦</div>
+        <div class="listing-card-body">
+          <div class="listing-card-title">Geometric Shade — Mini</div>
+          <div class="listing-card-price">$35</div>
+          <div style="font-size:10px;color:var(--text-3);">1 satış · ★5.0</div>
+        </div>
+      </div>
+      <div class="listing-card" style="border-style:dashed;display:flex;align-items:center;justify-content:center;min-height:130px;">
+        <div style="text-align:center;color:var(--text-3);font-size:13px;">+ Yeni listing</div>
+      </div>
+    </div>
+    <div class="slabel">Karar geçmişi özeti</div>
+    <div class="card">
+      <div class="summary-row"><div class="summary-key">Gün 1 · Niş</div><div class="summary-val">3D Lamba Kiti ✓</div></div>
+      <div class="summary-row"><div class="summary-key">Gün 2 · Üretim</div><div class="summary-val">Kit (Shade+USB) ✓</div></div>
+      <div class="summary-row"><div class="summary-key">Gün 3 · Marka</div><div class="summary-val">LumiPrint ✓</div></div>
+      <div class="summary-row"><div class="summary-key">Gün 4 · SEO skoru</div><div class="summary-val" style="color:var(--amber);">59 ⚠️</div></div>
+      <div class="summary-row"><div class="summary-key">Gün 5 · Fiyat</div><div class="summary-val">$35→$55 stratejisi ✓</div></div>
+      <div class="summary-row"><div class="summary-key">Gün 6 · Trafik</div><div class="summary-val">Reddit + Pinterest ✓</div></div>
+    </div>
+  </div>
+  <div class="bottom-cta">
+    <button class="btn-primary" onclick="go('screen-end')">Gün 9 krizine geç →</button>
+  </div>
+</div>
+
+<!-- SON: Negatif yorum krizi -->
+<div class="screen" id="screen-end">
+  <div class="topbar">
+    <div class="topbar-title">LumiPrint</div>
+    <div class="day-badge">Gün 9 · KRİZ</div>
+    <div class="budget-badge">💰 $380</div>
+  </div>
+  <div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:45%;background:var(--red);"></div></div></div>
+  <div class="scroll-area">
+    <div class="timer">⏱ Karar için süren<span id="countdown">60</span></div>
+    <div class="crisis-box"><strong>⭐★☆☆☆ — 2 yıldız:</strong> "Ürün fotoğraftaki kadar kaliteli değil, renk çok soluk geldi." — 54 kişi bu yorumu gördü. İtibar skoru 56'ya düştü.</div>
+    <div class="ai-bubble">
+      <div class="ai-label">Ortak · AI danışman</div>
+      <div class="ai-text">Bu kriz oyunun en kritik anlarından biri. Etsy'de satıcı yanıt kalitesi algoritma sıralamasını etkiliyor. Nasıl yanıt vereceğin gelecek 5 günün trafiğini belirleyecek.</div>
+    </div>
+    <div class="slabel">Ne yaparsın?</div>
+    <div class="option" id="crisis-a" onclick="selectCrisis('a')">
+      <div class="option-icon">🙏</div>
+      <div><div class="option-title">Özür + tam iade teklif et</div><div class="option-sub">İtibar geri kazanılabilir. Nakit -$45 ama müşteri memnuniyeti yüksek.</div></div>
+    </div>
+    <div class="option" id="crisis-b" onclick="selectCrisis('b')">
+      <div class="option-icon">🛡️</div>
+      <div><div class="option-title">Savun — "fotoğraflarda net gösterildi"</div><div class="option-sub">Para korunur ama itibar daha da düşebilir. Risk yüksek.</div></div>
+    </div>
+    <div class="option" id="crisis-c" onclick="selectCrisis('c')">
+      <div class="option-icon">🤝</div>
+      <div><div class="option-title">Kısmi iade + profesyonel yanıt</div><div class="option-sub">Orta yol. Diğer müşterilere iyi izlenim bırakır.</div></div>
+    </div>
+    <div class="slabel" style="margin-top:16px;">Ya da kendi çözümün</div>
+    <textarea id="crisis-custom" rows="3" placeholder="Kendi kriz stratejini yaz..." oninput="onCrisisCustom()"></textarea>
+    <button class="eval-btn" id="crisis-eval-btn" style="display:none;" onclick="evalCrisis()">AI ile değerlendir ↗</button>
+    <div id="crisis-eval-result"></div>
+    <div style="height:20px;"></div>
+  </div>
+  <div class="bottom-cta">
+    <button class="btn-primary" onclick="finishDemo()">Kararı ver — Devam et →</button>
+    <div style="text-align:center;font-size:12px;color:var(--text-3);margin-top:10px;">Bu demo Faz 1 + Faz 2 başlangıcını kapsar. Tam oyun 20 gün & 3 faz.</div>
+  </div>
+</div>
+
+<script>
+// Navigation
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// OB1
+let ob1sel = null;
+function selectOb1(v) {
+  ['a','b','c'].forEach(x => document.getElementById('ob1-'+x).classList.remove('selected'));
+  document.getElementById('ob1-'+v).classList.add('selected');
+  ob1sel = v;
+}
+
+// OB2
+let ob2sel = null;
+function selectOb2(v) {
+  ['a','b','c'].forEach(x => document.getElementById('ob2-'+x).classList.remove('selected'));
+  document.getElementById('ob2-'+v).classList.add('selected');
+  ob2sel = v;
+}
+
+// Platform
+let platSel = 'etsy';
+function selectPlat(v) {
+  ['etsy','amazon'].forEach(p => {
+    const el = document.getElementById('plat-'+p);
+    if(el) el.classList.remove('selected');
+  });
+  if(document.getElementById('plat-'+v)) document.getElementById('plat-'+v).classList.add('selected');
+  platSel = v;
+}
+
+// Niche
+let nicheSel = 'n3';
+function selectNiche(id) {
+  ['n1','n2','n3'].forEach(n => document.getElementById(n).classList.remove('selected'));
+  document.getElementById(id).classList.add('selected');
+  nicheSel = id;
+  document.getElementById('niche-custom').value = '';
+  document.getElementById('niche-eval-btn').style.display = 'none';
+  document.getElementById('niche-eval-result').innerHTML = '';
+}
+function onNicheCustom() {
+  const v = document.getElementById('niche-custom').value.trim();
+  if(v.length > 5) {
+    ['n1','n2','n3'].forEach(n => document.getElementById(n).classList.remove('selected'));
+    nicheSel = 'custom';
+    document.getElementById('niche-eval-btn').style.display = 'block';
+  }
+}
+async function evalNiche() {
+  const input = document.getElementById('niche-custom').value.trim();
+  if(!input) return;
+  const btn = document.getElementById('niche-eval-btn');
+  btn.disabled = true; btn.innerHTML = 'Analiz ediliyor<span class="ldots"></span>';
+  document.getElementById('niche-eval-result').innerHTML = '<div class="eval-result eval-mid">Etsy uygunluğu değerlendiriliyor<span class="ldots"></span></div>';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:600,
+        system:`Etsy e-ticaret simülasyon oyunu AI danışmanı. Kullanıcı Etsy'de $500 bütçeyle yan gelir hedefliyor. Önerilen nişi değerlendir. SADECE JSON döndür: {"verdict":"iyi/orta/zor","ozet":"<2 cümle>","etsy_talep":"Yüksek/Orta/Düşük","baslangic_uygun":true/false,"tahmini_fiyat":"$XX-XX","rekabet":"Düşük/Orta/Yüksek","puan":0-100,"ipucu":"<1 öneri>"}`,
+        messages:[{role:'user',content:`Niş: "${input}"`}] })
+    });
+    const r = JSON.parse((await res.json()).content[0].text.replace(/```json|```/g,'').trim());
+    const cls = r.verdict==='iyi'?'eval-good':r.verdict==='orta'?'eval-mid':'eval-bad';
+    document.getElementById('niche-eval-result').innerHTML = `<div class="eval-result ${cls}"><strong>${r.ozet}</strong><br><br>Etsy talebi: ${r.etsy_talep} · Rekabet: ${r.rekabet} · Fiyat: ${r.tahmini_fiyat}<br><br>💡 ${r.ipucu}</div>`;
+  } catch(e) { document.getElementById('niche-eval-result').innerHTML = '<div class="eval-result eval-mid">Hata oluştu, tekrar dene.</div>'; }
+  btn.disabled = false; btn.textContent = 'Tekrar değerlendir ↗';
+}
+
+// Production
+let prodSel = 'p1';
+function selectProd(id) {
+  ['p1','p2','p3'].forEach(p => document.getElementById(p).classList.remove('selected'));
+  document.getElementById(id).classList.add('selected');
+  prodSel = id;
+  document.getElementById('prod-custom').value = '';
+  document.getElementById('prod-eval-btn').style.display = 'none';
+  document.getElementById('prod-eval-result').innerHTML = '';
+}
+function onProdCustom() {
+  const v = document.getElementById('prod-custom').value.trim();
+  if(v.length > 5) {
+    ['p1','p2','p3'].forEach(p => document.getElementById(p).classList.remove('selected'));
+    document.getElementById('prod-eval-btn').style.display = 'block';
+  }
+}
+async function evalProd() {
+  const input = document.getElementById('prod-custom').value.trim();
+  if(!input) return;
+  const btn = document.getElementById('prod-eval-btn');
+  btn.disabled = true; btn.innerHTML = 'Değerlendiriliyor<span class="ldots"></span>';
+  document.getElementById('prod-eval-result').innerHTML = '<div class="eval-result eval-mid">Analiz ediliyor<span class="ldots"></span></div>';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:600,
+        system:`Etsy e-ticaret simülasyon oyunu. Kullanıcı 3D printer masa lambası/abajur kiti satıyor, $500 bütçe. Üretim modelini değerlendir. SADECE JSON: {"verdict":"iyi/orta/zor","ozet":"<2 cümle>","uygulanabilir":true/false,"sertifika_sorunu":true/false,"tahmini_marj":"<% aralık>","risk":"Düşük/Orta/Yüksek","puan":0-100,"ipucu":"<1 öneri>"}`,
+        messages:[{role:'user',content:`Üretim modeli: "${input}"`}] })
+    });
+    const r = JSON.parse((await res.json()).content[0].text.replace(/```json|```/g,'').trim());
+    const cls = r.verdict==='iyi'?'eval-good':r.verdict==='orta'?'eval-mid':'eval-bad';
+    document.getElementById('prod-eval-result').innerHTML = `<div class="eval-result ${cls}"><strong>${r.ozet}</strong><br><br>Sertifika sorunu: ${r.sertifika_sorunu?'Var ⚠️':'Yok ✓'} · Risk: ${r.risk} · Marj: ${r.tahmini_marj}<br><br>💡 ${r.ipucu}</div>`;
+  } catch(e) { document.getElementById('prod-eval-result').innerHTML = '<div class="eval-result eval-mid">Hata oluştu.</div>'; }
+  btn.disabled = false; btn.textContent = 'Tekrar değerlendir ↗';
+}
+
+// Day 3: Store name
+function fillStoreName(name) {
+  document.getElementById('store-name-input').value = name;
+  onStoreName();
+}
+function onStoreName() {
+  const v = document.getElementById('store-name-input').value.trim();
+  if(v.length > 1) {
+    document.getElementById('store-preview').style.display = 'block';
+    document.getElementById('preview-store-name').textContent = v;
+    document.getElementById('preview-store-url').textContent = v.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+    document.getElementById('tm-result').style.display = 'none';
+  }
+}
+async function checkTrademark() {
+  const name = document.getElementById('store-name-input').value.trim();
+  if(!name) return;
+  const box = document.getElementById('tm-result');
+  box.style.display = 'block';
+  box.className = 'warn-box';
+  box.innerHTML = 'Marka tescil kontrolü yapılıyor<span class="ldots"></span>';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:500,
+        system:`Etsy mağaza ismi marka tescil kontrolü simülatörü. GlowForge gerçekte tescilli — tehlike ver. Jenerik/yaratıcı isimler temiz. SADECE JSON: {"durum":"temiz/uyari/tehlike","ozet":"<2 cümle>","cakisma_riski":"Yok/Düşük/Yüksek","etsy_uygun":true/false,"alternatif":"<tehlike/uyarıda öneri, yoksa boş>"}`,
+        messages:[{role:'user',content:`İsim: "${name}"`}] })
+    });
+    const r = JSON.parse((await res.json()).content[0].text.replace(/```json|```/g,'').trim());
+    const cls = r.durum==='temiz'?'notif notif-teal':r.durum==='uyari'?'warn-box':'crisis-box';
+    const icon = r.durum==='temiz'?'✅':r.durum==='uyari'?'⚠️':'🚫';
+    box.className = cls;
+    box.innerHTML = `${icon} <strong>${r.durum==='temiz'?'Temiz — devam edebilirsin':r.durum==='uyari'?'Dikkat — incelenmeli':'Tehlike — bu ismi kullanma'}</strong><br>${r.ozet}${r.alternatif?`<br><br>Öneri: <strong>${r.alternatif}</strong> — <span style="text-decoration:underline;cursor:pointer;" onclick="fillStoreName('${r.alternatif}')">kullan</span>`:''}`;
+  } catch(e) { box.innerHTML = 'Kontrol yapılamadı.'; }
+}
+let designSel = 'd1';
+function selectDesign(id) {
+  ['d1','d2','d3'].forEach(d => document.getElementById(d).classList.remove('selected'));
+  document.getElementById(id).classList.add('selected');
+  designSel = id;
+}
+function confirmDay3() {
+  const name = document.getElementById('store-name-input').value.trim() || 'LumiPrint';
+  document.getElementById('final-store-name').textContent = name;
+  const budget = designSel === 'd1' ? 450 : 500;
+  document.getElementById('budget-d4').textContent = '💰 $' + budget;
+  document.getElementById('budget-d5').textContent = '💰 $' + budget;
+  go('screen-day4');
+}
+
+// Day 4: SEO
+let tagsD4 = [];
+function onSeoTitle() {
+  const v = document.getElementById('seo-title').value;
+  document.getElementById('title-chars').textContent = v.length + '/140';
+  document.getElementById('listing-title-prev').textContent = v || 'Başlık buraya gelecek...';
+  recalcSEO();
+}
+function fillTitle(t) { document.getElementById('seo-title').value = t; onSeoTitle(); }
+function onSeoPrice() {
+  const v = document.getElementById('seo-price').value;
+  document.getElementById('listing-price-prev').textContent = v ? '$'+v : '$—';
+  recalcSEO();
+}
+function onSeoDesc() {
+  document.getElementById('desc-chars').textContent = document.getElementById('seo-desc').value.length + '/500';
+  recalcSEO();
+}
+function onTagKeyD4(e) {
+  if(e.key==='Enter'||e.key===',') {
+    e.preventDefault();
+    const v = e.target.value.trim().replace(/,$/,'');
+    if(v && tagsD4.length < 13 && !tagsD4.includes(v)) addTagD4(v);
+    e.target.value = '';
+  }
+}
+function addTagD4(t) {
+  if(tagsD4.length >= 13 || tagsD4.includes(t)) return;
+  tagsD4.push(t);
+  renderTagsD4();
+  recalcSEO();
+}
+function removeTagD4(t) { tagsD4 = tagsD4.filter(x=>x!==t); renderTagsD4(); recalcSEO(); }
+function renderTagsD4() {
+  const wrap = document.getElementById('tag-wrap-d4');
+  const inp = document.getElementById('tag-in');
+  wrap.innerHTML = '';
+  tagsD4.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'tag-item';
+    el.innerHTML = `${t}<span class="tag-remove" onclick="removeTagD4('${t}')">×</span>`;
+    wrap.appendChild(el);
+  });
+  wrap.appendChild(inp);
+  document.getElementById('tag-count-d4').textContent = tagsD4.length + '/13';
+}
+function recalcSEO() {
+  const title = document.getElementById('seo-title').value;
+  const desc = document.getElementById('seo-desc').value;
+  const price = parseFloat(document.getElementById('seo-price').value)||0;
+  let s = 0;
+  if(title.length>=80) s+=30; else if(title.length>=40) s+=15; else if(title.length>0) s+=5;
+  if(title.toLowerCase().includes('3d')) s+=5;
+  if(title.toLowerCase().includes('lamp')||title.toLowerCase().includes('light')) s+=5;
+  if(tagsD4.length>=10) s+=25; else if(tagsD4.length>=5) s+=15; else if(tagsD4.length>0) s+=5;
+  if(desc.length>=200) s+=20; else if(desc.length>=80) s+=10; else if(desc.length>0) s+=4;
+  if(price>=42&&price<=80) s+=10; else if(price>0) s+=4;
+  if(tagsD4.length>=13) s+=5;
+  s = Math.min(100, s);
+  const color = s>=70?'var(--teal)':s>=40?'var(--amber)':'var(--red)';
+  const label = s>=70?'İyi':s>=40?'Orta':'Zayıf';
+  document.getElementById('seo-score-num').textContent = s;
+  document.getElementById('seo-score-num').style.color = color;
+  document.getElementById('seo-bar').style.width = s+'%';
+  document.getElementById('seo-bar').style.background = color;
+  document.getElementById('seo-label').textContent = label;
+}
+async function analyzeSEO() {
+  const title = document.getElementById('seo-title').value.trim();
+  const desc = document.getElementById('seo-desc').value.trim();
+  const price = document.getElementById('seo-price').value;
+  if(!title && tagsD4.length===0) { document.getElementById('seo-ai-result').innerHTML = '<div class="eval-result eval-mid">En az başlığı ve birkaç tag\'i doldur.</div>'; return; }
+  document.getElementById('seo-ai-result').innerHTML = '<div class="eval-result eval-mid">Etsy SEO analizi yapılıyor<span class="ldots"></span></div>';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:700,
+        system:`Etsy SEO uzmanı. LumiPrint mağazası 3D printer masa lambası + USB LED kiti satıyor. Listing'i değerlendir. SADECE JSON: {"puan":0-100,"verdict":"iyi/orta/zayif","ozet":"<2 cümle>","guclu":["<1>","<2>"],"eksik":["<1>","<2>"],"eksik_tag_oneri":"<1 tag>","tahmini_haftalik_gorunum":sayı,"tahmini_ilk_satis_gun":sayı}`,
+        messages:[{role:'user',content:`Başlık: "${title}"\nFiyat: $${price}\nTaglar: ${tagsD4.join(', ')}\nAçıklama: "${desc}"`}] })
+    });
+    const r = JSON.parse((await res.json()).content[0].text.replace(/```json|```/g,'').trim());
+    const cls = r.verdict==='iyi'?'eval-good':r.verdict==='orta'?'eval-mid':'eval-bad';
+    document.getElementById('seo-ai-result').innerHTML = `<div class="eval-result ${cls}"><strong>${r.ozet}</strong><br><br>✓ ${(r.guclu||[]).join(' · ✓ ')}<br>✗ ${(r.eksik||[]).join(' · ✗ ')}<br><br>~${r.tahmini_haftalik_gorunum} görüntülenme/hafta · İlk satış ~${r.tahmini_ilk_satis_gun}. gün${r.eksik_tag_oneri?`<br><br><span style="cursor:pointer;text-decoration:underline;" onclick="addTagD4('${r.eksik_tag_oneri}')">+ "${r.eksik_tag_oneri}" ekle</span>`:''}</div>`;
+  } catch(e) { document.getElementById('seo-ai-result').innerHTML = '<div class="eval-result eval-mid">Hata oluştu.</div>'; }
+}
+
+// Day 5: Price
+function onPriceD5() {
+  const p = parseInt(document.getElementById('price-slider-d5').value);
+  const fixed = 15.50;
+  const etsy = p * 0.095;
+  const net = p - fixed - etsy;
+  const margin = Math.round((net/p)*100);
+  document.getElementById('p-price-big').textContent = '$'+p;
+  const diff = Math.round(((p-52)/52)*100);
+  document.getElementById('p-price-sub').textContent = `Rakip ort. $52 · Sen %${Math.abs(diff)} ${diff>=0?'üstünde':'altında'}sın`;
+  document.getElementById('etsy-fee').textContent = '-$'+etsy.toFixed(2);
+  document.getElementById('net-profit-val').textContent = '$'+net.toFixed(2);
+  document.getElementById('d5-margin').textContent = margin+'%';
+  document.getElementById('d5-margin').style.color = margin>=50?'var(--teal)':margin>=35?'var(--amber)':'var(--red)';
+  document.getElementById('d5-breakeven').textContent = Math.ceil(50/net)+' satış';
+  document.getElementById('d5-monthly').textContent = '$'+Math.round(net*25);
+}
+function onPriceCustom() {
+  if(document.getElementById('price-custom').value.trim().length > 8)
+    document.getElementById('price-eval-btn').style.display = 'block';
+}
+async function evalPrice() {
+  const input = document.getElementById('price-custom').value.trim();
+  const price = document.getElementById('price-slider-d5').value;
+  const btn = document.getElementById('price-eval-btn');
+  btn.disabled = true; btn.innerHTML = 'Değerlendiriliyor<span class="ldots"></span>';
+  document.getElementById('price-eval-result').innerHTML = '<div class="eval-result eval-mid">Analiz ediliyor<span class="ldots"></span></div>';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:600,
+        system:`Etsy fiyatlandırma uzmanı. LumiPrint 3D lamp kit satıyor. Maliyet ~$15.50, rakip ort. $52. SADECE JSON: {"verdict":"iyi/orta/zor","ozet":"<2 cümle>","risk":"Düşük/Orta/Yüksek","tahmini_ilk_satis_gun":sayı,"tahmini_marj_pct":sayı,"puan":0-100,"etsy_gercegi":"<1 cümle veri>","ipucu":"<1 öneri>"}`,
+        messages:[{role:'user',content:`Strateji: "${input}"\nFiyat: $${price}`}] })
+    });
+    const r = JSON.parse((await res.json()).content[0].text.replace(/```json|```/g,'').trim());
+    const cls = r.verdict==='iyi'?'eval-good':r.verdict==='orta'?'eval-mid':'eval-bad';
+    document.getElementById('price-eval-result').innerHTML = `<div class="eval-result ${cls}"><strong>${r.ozet}</strong><br><br>Risk: ${r.risk} · İlk satış ~${r.tahmini_ilk_satis_gun}. gün · Marj ~%${r.tahmini_marj_pct}<br><br><em>${r.etsy_gercegi}</em><br><br>💡 ${r.ipucu}</div>`;
+  } catch(e) { document.getElementById('price-eval-result').innerHTML = '<div class="eval-result eval-mid">Hata oluştu.</div>'; }
+  btn.disabled = false; btn.textContent = 'Tekrar değerlendir ↗';
+}
+
+// Day 6: Traffic
+let selectedChs = new Set();
+function toggleCh(id) {
+  const card = document.getElementById(id);
+  if(selectedChs.has(id)) { selectedChs.delete(id); card.classList.remove('selected'); }
+  else { selectedChs.add(id); card.classList.add('selected'); }
+  document.getElementById('traffic-custom').value = '';
+  document.getElementById('traffic-eval-result').innerHTML = '';
+  document.getElementById('traffic-eval-btn').style.display = 'none';
+}
+function onTrafficCustom() {
+  const v = document.getElementById('traffic-custom').value.trim();
+  if(v.length > 8) {
+    selectedChs.clear();
+    document.querySelectorAll('.channel-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('traffic-eval-btn').style.display = 'block';
+  }
+}
+async function evalTraffic() {
+  const input = document.getElementById('traffic-custom').value.trim();
+  const btn = document.getElementById('traffic-eval-btn');
+  btn.disabled = true; btn.innerHTML = 'Değerlendiriliyor<span class="ldots"></span>';
+  document.getElementById('traffic-eval-result').innerHTML = '<div class="eval-result eval-mid">Analiz ediliyor<span class="ldots"></span></div>';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:600,
+        system:`Etsy trafik uzmanı. LumiPrint 3D lamp kit, fiyat $35-45, $450 bütçe, hedef 20 günde $1K. SADECE JSON: {"verdict":"iyi/orta/zor","ozet":"<2 cümle>","roi_tahmini":"Pozitif/Nötr/Negatif","tahmini_trafik_haftalik":sayı,"tahmini_satis_7gun":sayı,"nish_uyum":"İyi/Orta/Zayıf","maliyet_tahmini":"$X veya Ücretsiz","puan":0-100,"gercek_dunya":"<1 cümle>","ipucu":"<1 öneri>"}`,
+        messages:[{role:'user',content:`Strateji: "${input}"`}] })
+    });
+    const r = JSON.parse((await res.json()).content[0].text.replace(/```json|```/g,'').trim());
+    const cls = r.verdict==='iyi'?'eval-good':r.verdict==='orta'?'eval-mid':'eval-bad';
+    document.getElementById('traffic-eval-result').innerHTML = `<div class="eval-result ${cls}"><strong>${r.ozet}</strong><br><br>ROI: ${r.roi_tahmini} · ~${r.tahmini_trafik_haftalik} ziyaretçi/hafta · ~${r.tahmini_satis_7gun} satış/7gün<br>Niş uyumu: ${r.nish_uyum} · Maliyet: ${r.maliyet_tahmini}<br><br><em>${r.gercek_dunya}</em><br><br>💡 ${r.ipucu}</div>`;
+  } catch(e) { document.getElementById('traffic-eval-result').innerHTML = '<div class="eval-result eval-mid">Hata oluştu.</div>'; }
+  btn.disabled = false; btn.textContent = 'Tekrar değerlendir ↗';
+}
+
+// Crisis
+let crisisSel = null;
+let countdownInterval = null;
+function selectCrisis(v) {
+  ['a','b','c'].forEach(x => document.getElementById('crisis-'+x).classList.remove('selected'));
+  document.getElementById('crisis-'+v).classList.add('selected');
+  crisisSel = v;
+}
+function onCrisisCustom() {
+  const v = document.getElementById('crisis-custom').value.trim();
+  if(v.length > 8) {
+    ['a','b','c'].forEach(x => document.getElementById('crisis-'+x).classList.remove('selected'));
+    crisisSel = 'custom';
+    document.getElementById('crisis-eval-btn').style.display = 'block';
+  }
+}
+async function evalCrisis() {
+  const input = document.getElementById('crisis-custom').value.trim();
+  const btn = document.getElementById('crisis-eval-btn');
+  btn.disabled = true; btn.innerHTML = 'Değerlendiriliyor<span class="ldots"></span>';
+  document.getElementById('crisis-eval-result').innerHTML = '<div class="eval-result eval-mid">Analiz ediliyor<span class="ldots"></span></div>';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:700,
+        system:`Etsy kriz yönetimi uzmanı ve simülasyon oyunu AI danışmanı. LumiPrint 3D lamp kit satıyor. 2 yıldız yorum: "renk soluk". İtibar 56. Kullanıcının kriz stratejisini 4 kritere göre değerlendir. SADECE JSON: {"hasar":0-25,"finansal":0-25,"algoritma":0-25,"yaraticilik":0-25,"toplam":0-100,"verdict_tier":"win/mid/fail","verdict":"<2-3 cümle>","gercek_dunya":"<Etsy satıcılarında gerçekte nasıl işlediğine dair 2 cümle>","etkiler":[{"label":"<kısa>","tip":"green/red/amber"}],"bonus_ipucu":"<1 somut öneri>"}`,
+        messages:[{role:'user',content:`Kriz stratejisi: "${input}"`}] })
+    });
+    const r = JSON.parse((await res.json()).content[0].text.replace(/```json|```/g,'').trim());
+    const cls = r.verdict_tier==='win'?'eval-good':r.verdict_tier==='mid'?'eval-mid':'eval-bad';
+    const eff = (r.etkiler||[]).map(e=>`<span class="pill pill-${e.tip==='green'?'teal':e.tip==='red'?'red':'amber'}" style="margin-right:4px;">${e.label}</span>`).join('');
+    document.getElementById('crisis-eval-result').innerHTML = `<div class="eval-result ${cls}"><strong>${r.verdict}</strong><br><br>Puan: ${r.toplam}/100<br><div style="height:6px;background:rgba(255,255,255,0.4);border-radius:3px;margin:6px 0;overflow:hidden;"><div style="height:100%;width:${r.toplam}%;background:${r.toplam>=70?'#1D9E75':r.toplam>=45?'#BA7517':'#E24B4A'};border-radius:3px;"></div></div>${eff}<br><br><em>${r.gercek_dunya}</em><br><br>💡 ${r.bonus_ipucu}</div>`;
+  } catch(e) { document.getElementById('crisis-eval-result').innerHTML = '<div class="eval-result eval-mid">Hata oluştu.</div>'; }
+  btn.disabled = false; btn.textContent = 'Tekrar değerlendir ↗';
+}
+
+// Countdown
+function startCountdown() {
+  let t = 60;
+  countdownInterval = setInterval(() => {
+    t--;
+    const el = document.getElementById('countdown');
+    if(el) el.textContent = t;
+    if(t <= 0) { clearInterval(countdownInterval); }
+  }, 1000);
+}
+
+function finishDemo() {
+  clearInterval(countdownInterval);
+  alert('Demo tamamlandı! 🎉\n\nBu Faz 1 + Faz 2 başlangıcının prototipiydi.\nTam oyun: 20 gün, 3 faz, 23 karar noktası.\n\nGeri bildiriminizi bekliyoruz!');
+}
+
+// Screen transitions: start countdown on crisis screen
+const observer = new MutationObserver(() => {
+  if(document.getElementById('screen-end').classList.contains('active')) {
+    clearInterval(countdownInterval);
+    startCountdown();
+  }
+});
+observer.observe(document.getElementById('screen-end'), { attributes: true, attributeFilter: ['class'] });
+</script>
+</body>
+</html>
